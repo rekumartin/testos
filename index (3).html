@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Študentský Denník | Pro Edition</title>
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #ffffff;
+            --text-dim: #bbb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: var(--primary); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        #search-input, #sort-select {
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #search-input { min-width: 250px; }
+        #sort-select { cursor: pointer; }
+
+        #search-input:focus, #sort-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            transition: 0.3s;
+        }
+
+        .card img { width: 100%; height: 220px; object-fit: cover; }
+        .info { padding: 20px; }
+        .nickname { color: var(--primary); font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; display: block; }
+        .name { font-size: 1.4rem; margin: 0 0 10px 0; }
+        .bio { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+
+        #status-msg { font-size: 1.1rem; margin: 20px; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <h1>Študentský Denník</h1>
+
+    <div class="controls">
+        <input type="text" id="search-input" placeholder="Hľadať študenta...">
+        <select id="sort-select">
+            <option value="name">Zoradiť podľa: Mena (A-Z)</option>
+            <option value="surname">Zoradiť podľa: Priezviska (A-Z)</option>
+            <option value="bioLength">Zoradiť podľa: Dĺžky bio</option>
+        </select>
+    </div>
+
+    <div id="status-msg">Pripravujem dáta...</div>
+    <div class="container" id="student-container"></div>
+
+    <script>
+        // Zoradenie vykonáva backend (Python lambda), frontend len filtruje
+        const BASE_URL = window.location.origin + '/students';
+
+        let allStudents = [];
+
+        function zobrazStudentov(zoznam) {
+            const container = document.getElementById('student-container');
+            container.innerHTML = zoznam.length === 0
+                ? "<p>Nenašli sa výsledky.</p>"
+                : zoznam.map(student => `
+                    <div class="card">
+                        <img src="${student.image}" alt="${student.name}" onerror="this.src='https://via.placeholder.com/400x300'">
+                        <div class="info">
+                            <span class="nickname">${student.nickname}</span>
+                            <h2 class="name">${student.name} ${student.surname}</h2>
+                            <p class="bio">${student.bio}</p>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        document.getElementById('search-input').addEventListener('input', filtrujZobraz);
+        document.getElementById('sort-select').addEventListener('change', nacitajAZobraz);
+
+        // Len lokálne filtruje už načítané (zoradené) dáta
+        function filtrujZobraz() {
+            const hladanyText = document.getElementById('search-input').value.toLowerCase();
+            const vysledok = allStudents.filter(s =>
+                s.name.toLowerCase().includes(hladanyText) ||
+                s.surname.toLowerCase().includes(hladanyText)
+            );
+            zobrazStudentov(vysledok);
+        }
+
+        // Pošle nový request na backend so zvoleným sort parametrom
+        async function nacitajAZobraz() {
+            const aspektSortu = document.getElementById('sort-select').value;
+            try {
+                const response = await fetch(`${BASE_URL}?sort=${aspektSortu}`);
+                allStudents = await response.json();
+                filtrujZobraz();
+            } catch (error) {
+                document.getElementById('status-msg').innerHTML = "❌ Chyba pripojenia.";
+            }
+        }
+
+        async function fetchStudents() {
+            try {
+                const response = await fetch(`${BASE_URL}?sort=name`);
+                allStudents = await response.json();
+                document.getElementById('status-msg').style.display = 'none';
+                filtrujZobraz();
+            } catch (error) {
+                document.getElementById('status-msg').innerHTML = "❌ Chyba pripojenia.";
+            }
+        }
+
+        fetchStudents();
+    </script>
+</body>
+</html>
