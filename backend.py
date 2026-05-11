@@ -9,13 +9,16 @@ load_dotenv()
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-PORT = int(os.getenv("PORT", 10000))  # Render používa 10000
+PORT = int(os.getenv("PORT", 10000))  
 
-# Dostupné lambda kľúče pre zoradenie
 SORT_KEYS = {
-    "name":      lambda s: s["name"].lower(),
-    "surname":   lambda s: s["surname"].lower(),
-    "bioLength": lambda s: len(s["bio"]),
+    "name":      (lambda s: s["name"].lower(),     True),   
+    "NAME":      (lambda s: s["name"].lower(),    False),  
+    "surname":   (lambda s: s["surname"].lower(),  True),   
+    "SURNAME":   (lambda s: s["surname"].lower(), False),
+    "bioLength": (lambda s: len(s["bio"]),         True),   
+    "BIOLENGTH": (lambda s: len(s["bio"]),        False),
+
 }
 
 
