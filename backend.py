@@ -7,7 +7,7 @@ from db import get_students
 load_dotenv()
 
 app = Flask(__name__, static_folder=".", static_url_path="")
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 PORT = int(os.getenv("PORT", 10000))  # Render používa 10000
 
@@ -17,6 +17,14 @@ SORT_KEYS = {
     "surname":   lambda s: s["surname"].lower(),
     "bioLength": lambda s: len(s["bio"]),
 }
+
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    return response
 
 
 @app.route("/students")
